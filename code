@@ -1,0 +1,52 @@
+# Import Libraries
+# Step 1: Import Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
+import warnings
+warnings.filterwarnings('ignore')
+# Load Dataset
+df = pd.read_csv(r"C:\Users\Naveen Guna\Documents\OneDrive\Desktop\intern\diabetes.csv")  # Make sure this file is in your folder
+df.head()
+# Preprocess Data
+# Check for missing values
+print(df.isnull().sum())
+# Normalize the feature columns
+scaler = StandardScaler()
+X = scaler.fit_transform(df.drop('Outcome', axis=1))
+y = df['Outcome']
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Train and Evaluate Multiple Models
+models = {
+    "Logistic Regression": LogisticRegression(),
+    "Random Forest": RandomForestClassifier(),
+    "Support Vector Machine": SVC(probability=True),
+    "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+}
+results = {}
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1]
+    print(f"\n--- {name} ---")
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print("ROC AUC:", roc_auc_score(y_test, y_proba))
+    print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred))
+    print("Classification Report:\n", classification_report(y_test, y_pred))
+    results[name] = roc_auc_score(y_test, y_proba)
+# Feature Importance (Random Forest)
+rf = RandomForestClassifier()
+rf.fit(X_train, y_train)
+importances = pd.Series(rf.feature_importances_, index=df.columns[:-1])
+importances.sort_values().plot(kind='barh', figsize=(8, 5), title="Feature Importance (Random Forest)")
+plt.xlabel("Importance Score")
+plt.show()
